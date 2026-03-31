@@ -1,0 +1,34 @@
+# Strategia bezpieczeństwa
+
+> Skopiuj ten plik jako `context/strategia.md` i wypełnij.
+> Możesz też użyć `/context-setup` do interaktywnego wypełnienia.
+
+## Cele strategiczne
+
+<!-- Pytanie: Jakie są główne cele bezpieczeństwa na ten rok / najbliższe lata?
+     Przykład: "1. Wdrożenie ISMS i certyfikacja ISO 27001. 2. Uruchomienie SOC. 3. Compliance z NIS2." -->
+
+## Kluczowe projekty
+
+<!-- Pytanie: Jakie projekty bezpieczeństwa są w toku lub planowane?
+     Przykład: "SIEM (Splunk, Q2-Q3), DLP (Q3-Q4), Security Awareness (ciągły), PAM (Q1-Q2)" -->
+
+## Priorytety na najbliższy kwartał
+
+<!-- Pytanie: Co jest priorytetowe w najbliższych 3 miesiącach?
+     Przykład: "1. Zamknięcie gap analysis NIS2. 2. Rekrutacja analityka SOC. 3. Wdrożenie MFA." -->
+
+## Budżet i zasoby
+
+<!-- Pytanie: Jaki budżet i jakie ograniczenia zasobowe?
+     Przykład: "Budżet: 2M PLN/rok. Ograniczenie: brak specjalistów na rynku, zamrożenie etatów." -->
+
+## KPI i metryki
+
+<!-- Pytanie: Jakie metryki śledzisz? Jak mierzysz sukces?
+     Przykład: "MTTD, MTTR, % compliance z politykami, liczba incydentów, pokrycie awareness" -->
+
+## Raportowanie strategiczne
+
+<!-- Pytanie: Jak raportujesz postępy strategiczne?
+     Przykład: "Kwartalny raport strategiczny dla zarządu, miesięczny dashboard dla CTO" -->

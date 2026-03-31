@@ -1,0 +1,34 @@
+# Organizacja
+
+> Skopiuj ten plik jako `context/organizacja.md` i wypełnij.
+> Możesz też użyć `/context-setup` do interaktywnego wypełnienia.
+
+## Branża i profil
+
+<!-- Pytanie: W jakiej branży działa Twoja organizacja?
+     Przykład: "Sektor finansowy - bank komercyjny" lub "Produkcja przemysłowa - automotive" -->
+
+## Wielkość organizacji
+
+<!-- Pytanie: Ilu pracowników? Ile lokalizacji? Jaka skala operacji?
+     Przykład: "~2000 pracowników, 5 lokalizacji w Polsce, operacje w UE" -->
+
+## Struktura organizacyjna
+
+<!-- Pytanie: Jak wygląda struktura? Gdzie jest cyberbezpieczeństwo w hierarchii?
+     Przykład: "CISO raportuje do CTO, który raportuje do zarządu. Dział IT: 80 osób." -->
+
+## Kontekst regulacyjny
+
+<!-- Pytanie: Jakie regulacje obowiązują Twoją organizację?
+     Przykład: "RODO, NIS2 (operator kluczowy), KSC, regulacje KNF" -->
+
+## Środowisko technologiczne
+
+<!-- Pytanie: Jaki stack technologiczny? Cloud/on-prem/hybrid? Kluczowe systemy?
+     Przykład: "Hybrid cloud (Azure + on-prem), AD, SAP, systemy SCADA, O365" -->
+
+## Specyfika i wyzwania
+
+<!-- Pytanie: Jakie specyficzne wyzwania bezpieczeństwa wynikają z charakteru organizacji?
+     Przykład: "Systemy OT/ICS, praca zdalna, M&A w toku, legacy systemy" -->

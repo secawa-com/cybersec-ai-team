@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -e
+
+CYBERSEC_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+echo "=== CYBERSECTEAM Dev Setup ==="
+echo ""
+echo "Plugin mode: use 'claude --plugin-dir $CYBERSEC_DIR' for local testing"
+echo ""
+
+# Initialize project-level context directory for testing
+CYBERSEC_CTX=".claude/cybersecteam"
+mkdir -p "$CYBERSEC_CTX/kb"
+echo "  [+] Context directory: $CYBERSEC_CTX"
+
+# Check for context files
+CONTEXT_FILES=(organization.md about-me.md strategy.md team.md governance.md)
+MISSING=0
+for cf in "${CONTEXT_FILES[@]}"; do
+  if [ ! -f "$CYBERSEC_CTX/$cf" ]; then
+    MISSING=$((MISSING + 1))
+  fi
+done
+
+echo ""
+if [ "$MISSING" -eq 0 ]; then
+  echo "  Pliki kontekstowe: wszystkie obecne"
+else
+  echo "  Pliki kontekstowe: brakuje $MISSING z ${#CONTEXT_FILES[@]}"
+  echo "  Uruchom /cybersecteam:context-setup w Claude Code aby je stworzyc interaktywnie"
+fi
+
+echo ""
+echo "=== Dev Setup gotowy ==="
+echo ""
+echo "Testowanie lokalne:"
+echo "  claude --plugin-dir $CYBERSEC_DIR"
+echo ""
+echo "Walidacja:"
+echo "  ./dev-check"
+echo "  ./dev-check [skill-name]   # np. ./dev-check risk-assess"

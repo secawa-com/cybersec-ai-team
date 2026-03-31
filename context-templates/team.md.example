@@ -1,0 +1,33 @@
+# Zespół bezpieczeństwa
+
+> Skopiuj ten plik jako `context/zespol.md` i wypełnij.
+> Możesz też użyć `/context-setup` do interaktywnego wypełnienia.
+
+## Struktura zespołu
+
+<!-- Pytanie: Jak wygląda struktura Twojego zespołu bezpieczeństwa?
+     Przykład: "CISO → 3 team leadów (SOC, GRC, ITSec) → 12 specjalistów. Łącznie 16 osób." -->
+
+## Role i odpowiedzialności
+
+<!-- Pytanie: Jakie role są w zespole i za co odpowiadają?
+     Przykład:
+     - SOC Lead + 4 analityków (L1-L2): monitoring, IR, triage
+     - GRC Manager + 2 specjalistów: compliance, audyty, polityki
+     - ITSec Engineer × 3: hardening, vulnerability management, PAM
+     - Security Architect × 1: architektura, przeglądy projektów -->
+
+## Luki kompetencyjne
+
+<!-- Pytanie: Gdzie brakuje Ci kompetencji lub zasobów?
+     Przykład: "Brak: cloud security specialist, threat hunter, SOC L3. Niedobór: GRC (1 os. na urlopie)." -->
+
+## Współpraca z innymi działami
+
+<!-- Pytanie: Z jakimi działami współpracujesz i jak?
+     Przykład: "IT Ops - wspólne hardening i patching. Legal - compliance RODO. HR - awareness. DevOps - DevSecOps pipeline." -->
+
+## Outsourcing i partnerzy
+
+<!-- Pytanie: Jakie usługi są outsourcowane? Jacy partnerzy?
+     Przykład: "SOC L1 (częściowo MDR), pentesty (zewnętrzny vendor 2x/rok), DPO zewnętrzny" -->

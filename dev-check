@@ -1,0 +1,459 @@
+#!/usr/bin/env bash
+set -e
+
+CYBERSEC_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_SKILL="$CYBERSEC_DIR/skills/manager/SKILL.md"
+README="$CYBERSEC_DIR/README.md"
+PLUGIN_JSON="$CYBERSEC_DIR/.claude-plugin/plugin.json"
+
+# Skills excluded from checking (different patterns, not subject to standard conventions)
+EXCLUDED_SKILLS="context-setup"
+# Agents excluded from checking (self-referential)
+EXCLUDED_AGENTS="cst-checker"
+
+is_excluded_skill() {
+  echo "$EXCLUDED_SKILLS" | grep -qw "$1"
+}
+
+is_excluded_agent() {
+  echo "$EXCLUDED_AGENTS" | grep -qw "$1"
+}
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m'
+
+ERRORS=0
+WARNINGS=0
+SKILLS_CHECKED=0
+AGENTS_CHECKED=0
+
+pass() { echo -e "    ${GREEN}[✓]${NC} $1"; }
+warn() { echo -e "    ${YELLOW}[!]${NC} $1"; WARNINGS=$((WARNINGS + 1)); }
+fail() { echo -e "    ${RED}[✗]${NC} $1"; ERRORS=$((ERRORS + 1)); }
+
+# Extract YAML frontmatter field (simple grep-based, handles multi-line description)
+get_frontmatter_field() {
+  local file="$1" field="$2"
+  sed -n '/^---$/,/^---$/p' "$file" 2>/dev/null | grep -m1 "^${field}:" | sed "s/^${field}:[[:space:]]*//"
+}
+
+# Get multi-line description from frontmatter
+get_description() {
+  local file="$1"
+  local in_desc=false
+  local result=""
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^description: ]]; then
+      # Single-line description
+      local val="${line#description:}"
+      val="${val#"${val%%[![:space:]]*}"}"
+      if [ -n "$val" ] && [ "$val" != "|" ]; then
+        echo "$val"
+        return
+      fi
+      in_desc=true
+      continue
+    fi
+    if $in_desc; then
+      if [[ "$line" =~ ^[a-z] ]] || [[ "$line" == "---" ]]; then
+        break
+      fi
+      result+="${line#  }"$'\n'
+    fi
+  done < <(sed -n '/^---$/,/^---$/p' "$file" 2>/dev/null)
+  echo "$result"
+}
+
+# Check if section header exists in file
+has_section() {
+  local file="$1" section="$2"
+  grep -q "^#\+.*${section}" "$file" 2>/dev/null
+}
+
+# Check if string appears in file
+has_string() {
+  local file="$1" string="$2"
+  grep -q "$string" "$file" 2>/dev/null
+}
+
+check_plugin_json() {
+  echo ""
+  echo "--- Plugin manifest ---"
+  if [ -f "$PLUGIN_JSON" ]; then
+    pass "plugin.json exists"
+    # Check required fields
+    for field in name version description author; do
+      if grep -q "\"$field\"" "$PLUGIN_JSON" 2>/dev/null; then
+        pass "plugin.json: $field present"
+      else
+        fail "plugin.json: $field missing"
+      fi
+    done
+  else
+    fail "plugin.json MISSING (.claude-plugin/plugin.json)"
+  fi
+}
+
+check_skill() {
+  local skill_dir="$1"
+  local skill_name
+  skill_name=$(basename "$skill_dir")
+  local skill_file="$skill_dir/SKILL.md"
+  local agent_file="$CYBERSEC_DIR/agents/cst-${skill_name}.md"
+  local lines
+  lines=$(wc -l < "$skill_file" | tr -d ' ')
+
+  SKILLS_CHECKED=$((SKILLS_CHECKED + 1))
+  echo ""
+  echo -e "${GREEN}[✓]${NC} skills/$skill_name/SKILL.md ($lines lines)"
+
+  # --- Line count ---
+  if [ "$lines" -gt 500 ]; then
+    fail "SKILL.md exceeds 500 lines ($lines)"
+  elif [ "$lines" -gt 200 ]; then
+    pass "Line count: $lines (within 500 limit)"
+  else
+    pass "Line count: $lines"
+  fi
+
+  # --- Frontmatter fields ---
+  local name_field desc_field
+  name_field=$(get_frontmatter_field "$skill_file" "name")
+  desc_field=$(get_description "$skill_file")
+
+  if [ -n "$name_field" ]; then
+    pass "Frontmatter: name present"
+  else
+    if grep -q "^## name:" "$skill_file" 2>/dev/null; then
+      warn "Frontmatter: name uses '## name:' format (should be 'name:')"
+    else
+      fail "Frontmatter: name missing"
+    fi
+  fi
+
+  if [ -n "$desc_field" ]; then
+    local desc_len=${#desc_field}
+    if [ "$desc_len" -gt 1024 ]; then
+      fail "Description: $desc_len chars (max 1024)"
+    else
+      pass "Description: $desc_len chars"
+    fi
+  else
+    fail "Frontmatter: description missing"
+  fi
+
+  if has_string "$skill_file" "allowed-tools:"; then
+    pass "Frontmatter: allowed-tools present"
+  else
+    fail "Frontmatter: allowed-tools missing"
+  fi
+
+  # --- Description quality ---
+  if [ -n "$desc_field" ]; then
+    if echo "$desc_field" | grep -qi "Do NOT use for"; then
+      pass "Description: negative trigger present"
+    else
+      warn "Description: missing negative trigger (Do NOT use for...)"
+    fi
+
+    if echo "$desc_field" | grep -qi "Use when"; then
+      pass "Description: trigger phrases present"
+    else
+      warn "Description: missing trigger phrases (Use when...)"
+    fi
+  fi
+
+  # --- Required sections ---
+  local sections_ok=true
+  for section in "Preambu" "Tożsamość" "Workflow|Tryby pracy" "Troubleshooting" "Przykład"; do
+    if ! grep -qE "^#+ .*(${section})" "$skill_file" 2>/dev/null; then
+      fail "Missing section: ${section}"
+      sections_ok=false
+    fi
+  done
+  if [ "$sections_ok" = true ]; then
+    pass "Required sections present"
+  fi
+
+  # --- Shared rules loading ---
+  if has_string "$skill_file" "preamble.md"; then
+    pass "Shared: preamble.md referenced"
+  else
+    fail "Shared: preamble.md NOT referenced"
+  fi
+
+  if has_string "$skill_file" "anti-hallucination.md"; then
+    pass "Shared: anti-hallucination.md referenced"
+  else
+    fail "Shared: anti-hallucination.md NOT referenced"
+  fi
+
+  if has_string "$skill_file" "data-sensitivity.md"; then
+    pass "Shared: data-sensitivity.md referenced"
+  else
+    fail "Shared: data-sensitivity.md NOT referenced"
+  fi
+
+  # --- Path convention: should use ${CLAUDE_SKILL_DIR} not hardcoded paths ---
+  if has_string "$skill_file" '~/.claude/skills/cybersecteam'; then
+    fail "Paths: uses hardcoded ~/.claude/skills/cybersecteam/ (should use \${CLAUDE_SKILL_DIR})"
+  else
+    pass "Paths: no hardcoded plugin paths"
+  fi
+
+  # --- References exist ---
+  if [ -d "$skill_dir/references" ]; then
+    local broken=0
+    for ref in "$skill_dir"/references/*.md; do
+      [ -f "$ref" ] || continue
+      local ref_name
+      ref_name=$(basename "$ref")
+      if ! has_string "$skill_file" "$ref_name"; then
+        warn "Reference file $ref_name exists but not referenced in SKILL.md"
+      fi
+    done
+    for ref_link in $(grep -oE 'references/[a-z-]+\.md' "$skill_file" 2>/dev/null | sort -u); do
+      if [ ! -f "$skill_dir/$ref_link" ]; then
+        fail "Broken reference: $ref_link"
+        broken=$((broken + 1))
+      fi
+    done
+    if [ "$broken" -eq 0 ]; then
+      pass "References: all links valid"
+    fi
+  fi
+
+  # --- Registered in manager SKILL.md ---
+  if has_string "$ROOT_SKILL" "$skill_name"; then
+    pass "Registered in manager SKILL.md"
+  else
+    # manager itself doesn't need to be registered in itself
+    if [ "$skill_name" != "manager" ]; then
+      fail "NOT registered in manager SKILL.md"
+    fi
+  fi
+
+  # --- Matching agent ---
+  if [ -f "$agent_file" ] && ! is_excluded_agent "cst-${skill_name}"; then
+    check_agent "$agent_file" "$skill_dir"
+  elif [ -f "$agent_file" ]; then
+    pass "Agent cst-${skill_name} excluded from check"
+  else
+    pass "No matching agent (interactive-only skill)"
+  fi
+}
+
+check_agent() {
+  local agent_file="$1"
+  local skill_dir="$2"
+  local agent_name
+  agent_name=$(basename "$agent_file" .md)
+  local lines
+  lines=$(wc -l < "$agent_file" | tr -d ' ')
+
+  AGENTS_CHECKED=$((AGENTS_CHECKED + 1))
+  echo -e "  ${GREEN}[✓]${NC} agents/$agent_name.md ($lines lines)"
+
+  # --- Line count ---
+  if [ "$lines" -gt 200 ]; then
+    warn "Agent exceeds 200 lines ($lines)"
+  else
+    pass "Agent line count: $lines"
+  fi
+
+  # --- Frontmatter fields ---
+  if has_string "$agent_file" "^name:"; then
+    pass "Agent frontmatter: name present"
+  else
+    fail "Agent frontmatter: name missing"
+  fi
+
+  if has_string "$agent_file" "^description:"; then
+    pass "Agent frontmatter: description present"
+  else
+    fail "Agent frontmatter: description missing"
+  fi
+
+  if has_string "$agent_file" "^tools:"; then
+    pass "Agent frontmatter: tools present"
+  else
+    fail "Agent frontmatter: tools missing"
+  fi
+
+  if has_string "$agent_file" "^model:"; then
+    pass "Agent frontmatter: model present"
+  else
+    warn "Agent frontmatter: model not specified"
+  fi
+
+  if has_string "$agent_file" "^memory:"; then
+    pass "Agent frontmatter: memory present"
+  else
+    warn "Agent frontmatter: memory not specified"
+  fi
+
+  # --- Required sections ---
+  local agent_sections_ok=true
+  if ! grep -qE "Poza zakresem" "$agent_file" 2>/dev/null; then
+    fail "Agent: missing scope guard (Poza zakresem)"
+    agent_sections_ok=false
+  fi
+
+  if ! grep -qE "^#+ .*(Workflow|Kontekst)" "$agent_file" 2>/dev/null; then
+    fail "Agent: missing Workflow or Kontekst section"
+    agent_sections_ok=false
+  fi
+
+  if ! grep -qE "BRAK_DANYCH|brakujących danych" "$agent_file" 2>/dev/null; then
+    fail "Agent: missing data handling section ([BRAK_DANYCH])"
+    agent_sections_ok=false
+  fi
+
+  if has_section "$agent_file" "Troubleshooting"; then
+    pass "Agent: Troubleshooting present"
+  else
+    warn "Agent: missing Troubleshooting section"
+  fi
+
+  if has_section "$agent_file" "Przykład"; then
+    pass "Agent: Example present"
+  else
+    warn "Agent: missing Example section"
+  fi
+
+  if [ "$agent_sections_ok" = true ]; then
+    pass "Agent: required sections present"
+  fi
+
+  # --- Shared rules in agent ---
+  if has_string "$agent_file" "anti-hallucination.md"; then
+    pass "Agent shared: anti-hallucination.md referenced"
+  else
+    fail "Agent shared: anti-hallucination.md NOT referenced"
+  fi
+
+  if has_string "$agent_file" "data-sensitivity.md"; then
+    pass "Agent shared: data-sensitivity.md referenced"
+  else
+    fail "Agent shared: data-sensitivity.md NOT referenced"
+  fi
+
+  # --- Path convention ---
+  if has_string "$agent_file" '~/.claude/skills/cybersecteam'; then
+    fail "Agent paths: uses hardcoded ~/.claude/skills/cybersecteam/ (should use relative or \${CLAUDE_SKILL_DIR})"
+  else
+    pass "Agent paths: no hardcoded plugin paths"
+  fi
+
+  # --- Agent references same methodology as skill ---
+  if [ -n "$skill_dir" ] && [ -d "$skill_dir/references" ]; then
+    for ref in "$skill_dir"/references/*.md; do
+      [ -f "$ref" ] || continue
+      local ref_name
+      ref_name=$(basename "$ref")
+      if has_string "$agent_file" "$ref_name"; then
+        pass "Agent references: $ref_name (consistent with skill)"
+      else
+        warn "Agent does NOT reference $ref_name (skill does)"
+      fi
+    done
+  fi
+
+  # --- Registered in manager SKILL.md ---
+  if has_string "$ROOT_SKILL" "$agent_name"; then
+    pass "Agent registered in manager SKILL.md"
+  else
+    fail "Agent NOT registered in manager SKILL.md"
+  fi
+
+  # --- Agent should NOT have AskUserQuestion ---
+  if has_string "$agent_file" "AskUserQuestion"; then
+    warn "Agent has AskUserQuestion (sub-agents should not ask questions)"
+  fi
+}
+
+check_shared() {
+  echo ""
+  echo "--- Shared files ---"
+  for f in preamble.md anti-hallucination.md data-sensitivity.md; do
+    if [ -f "$CYBERSEC_DIR/shared/$f" ]; then
+      local lines
+      lines=$(wc -l < "$CYBERSEC_DIR/shared/$f" | tr -d ' ')
+      pass "shared/$f ($lines lines)"
+    else
+      fail "shared/$f MISSING"
+    fi
+  done
+}
+
+check_orphan_agents() {
+  echo ""
+  echo "--- Orphan agents (no matching skill) ---"
+  for f in "$CYBERSEC_DIR"/agents/*.md; do
+    [ -f "$f" ] || continue
+    local agent_name
+    agent_name=$(basename "$f" .md)
+    if is_excluded_agent "$agent_name"; then
+      continue
+    fi
+    local skill_name="${agent_name#cst-}"
+    if [ ! -d "$CYBERSEC_DIR/skills/$skill_name" ]; then
+      warn "Agent $agent_name has no matching skill directory (skills/$skill_name/)"
+    fi
+  done
+}
+
+# --- Main ---
+
+# Filter to specific skill if argument provided
+FILTER="$1"
+
+echo "=== CYBERSECTEAM Plugin Check ==="
+
+check_plugin_json
+
+if [ -n "$FILTER" ]; then
+  skill_dir="$CYBERSEC_DIR/skills/$FILTER"
+  if [ -f "$skill_dir/SKILL.md" ]; then
+    check_skill "$skill_dir"
+  else
+    echo "Skill not found: skills/$FILTER"
+    exit 1
+  fi
+else
+  # Check all skills
+  for d in "$CYBERSEC_DIR"/skills/*/; do
+    if [ -f "$d/SKILL.md" ]; then
+      sname=$(basename "$d")
+      if is_excluded_skill "$sname"; then
+        echo ""
+        echo -e "${YELLOW}[~]${NC} skills/$sname/SKILL.md (excluded)"
+      else
+        check_skill "$d"
+      fi
+    fi
+  done
+
+  check_shared
+  check_orphan_agents
+fi
+
+# Summary
+echo ""
+echo "=== Summary ==="
+echo -e "Skills: $SKILLS_CHECKED checked"
+echo -e "Agents: $AGENTS_CHECKED checked"
+if [ "$ERRORS" -gt 0 ]; then
+  echo -e "${RED}Errors: $ERRORS${NC}"
+fi
+if [ "$WARNINGS" -gt 0 ]; then
+  echo -e "${YELLOW}Warnings: $WARNINGS${NC}"
+fi
+if [ "$ERRORS" -eq 0 ] && [ "$WARNINGS" -eq 0 ]; then
+  echo -e "${GREEN}All checks passed${NC}"
+fi
+
+exit $ERRORS

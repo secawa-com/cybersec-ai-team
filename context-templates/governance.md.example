@@ -1,0 +1,43 @@
+# Governance bezpieczeństwa
+
+> Skopiuj ten plik jako `context/governance.md` i wypełnij.
+> Możesz też użyć `/context-setup` do interaktywnego wypełnienia.
+
+## Struktura decyzyjna
+
+<!-- Pytanie: Jak podejmowane są decyzje dotyczące bezpieczeństwa? Kto zatwierdza co?
+     Przykład: "CISO decyduje operacyjnie. Budżet > 50k PLN → CTO. Zmiany polityk → Komitet ds. Bezpieczeństwa (kwartalnie)." -->
+
+## Polityki bezpieczeństwa
+
+<!-- Pytanie: Jakie polityki bezpieczeństwa obowiązują? Jaki jest ich status?
+     Przykład:
+     - Polityka Bezpieczeństwa Informacji (aktualna, przegląd: Q1)
+     - Polityka Zarządzania Incydentami (wymaga aktualizacji)
+     - Polityka Dostępu (aktualna)
+     - Polityka BYOD (brak - do stworzenia) -->
+
+## Procesy i workflow
+
+<!-- Pytanie: Jakie kluczowe procesy bezpieczeństwa funkcjonują?
+     Przykład: "Change management, incident response, vulnerability management, access review (kwartalny), risk assessment (roczny)" -->
+
+## Procedury eskalacji
+
+<!-- Pytanie: Jak wygląda eskalacja? Kto jest informowany i kiedy?
+     Przykład: "Incydent krytyczny → CISO natychmiast → CTO w ciągu 1h → Zarząd w ciągu 4h. Incydent wysoki → CISO w 2h." -->
+
+## Regulacje i compliance
+
+<!-- Pytanie: Jakie regulacje obowiązują i jaki jest status zgodności?
+     Przykład: "NIS2 - gap analysis w toku (60% pokrycia). RODO - DPO wyznaczony, DPIA regularnie. ISO 27001 - planowana certyfikacja Q4." -->
+
+## Audyty i przeglądy
+
+<!-- Pytanie: Jak często i jakie audyty przeprowadzacie?
+     Przykład: "Audyt wewnętrzny: co pół roku. Audyt zewnętrzny: rocznie. Pentesty: 2x/rok. Przegląd polityk: rocznie." -->
+
+## Format raportowania
+
+<!-- Pytanie: Jaki format raportowania stosujecie?
+     Przykład: "Executive summary (1 strona) + szczegóły techniczne (załącznik). Dashboard w Power BI. Raporty w SharePoint." -->
