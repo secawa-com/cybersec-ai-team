@@ -20,11 +20,9 @@ Wirtualny zespół cyberbezpieczeństwa AI wspierający CISO w codziennej pracy.
 /plugin install cybersecteam@secawa-cybersecteam
 ```
 
-### Krok 3: Przeładuj pluginy
+### Krok 3: Zrestartuj Claude Code
 
-```bash
-/reload-plugins
-```
+Po instalacji pluginu **zrestartuj Claude Code** (zamknij i otwórz ponownie). Sam `/reload-plugins` może nie wystarczyć do załadowania nowych skilli.
 
 ### Krok 4: Skonfiguruj kontekst organizacyjny
 
@@ -39,8 +37,9 @@ Wirtualny zespół cyberbezpieczeństwa AI wspierający CISO w codziennej pracy.
 ```bash
 /plugin marketplace update secawa-cybersecteam
 /plugin update cybersecteam@secawa-cybersecteam
-/reload-plugins
 ```
+
+Po aktualizacji zrestartuj Claude Code. Sam `/reload-plugins` może nie załadować zmian poprawnie.
 
 ### Automatyczna aktualizacja
 
